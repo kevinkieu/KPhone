@@ -1,0 +1,48 @@
+<resources>
+    <string name="app_name">KPhone</string>
+    <string name="incoming_call">Cuộc gọi đến</string>
+    <string name="mobile_label">Di động</string>
+    <string name="call_ended">Đã kết thúc cuộc gọi</string>
+    
+    <!-- In-Call Actions -->
+    <string name="action_mute">Tắt tiếng</string>
+    <string name="action_keypad">Bàn phím</string>
+    <string name="action_speaker">Loa ngoài</string>
+    <string name="action_add_call">Thêm cuộc gọi</string>
+    <string name="action_hold">Giữ máy</string>
+    <string name="action_video">Gọi video</string>
+    <string name="action_end_call">Kết thúc</string>
+    <string name="action_answer">Trả lời</string>
+    <string name="action_decline">Từ chối</string>
+    <string name="action_quick_reply">Tin nhắn phản hồi</string>
+
+    <!-- Main Screen -->
+    <string name="caller_info_section">Thông tin người gọi</string>
+    <string name="caller_name_label">Tên người gọi</string>
+    <string name="caller_number_label">Số điện thoại</string>
+    <string name="timer_section">Hẹn giờ cuộc gọi</string>
+    <string name="ringtone_section">Nhạc chuông cuộc gọi</string>
+    <string name="default_ringtone">Chuông mặc định của máy</string>
+    <string name="btn_use_default_ringtone">Dùng chuông máy</string>
+    <string name="btn_pick_file">Chọn từ File</string>
+    <string name="btn_start_now">Bắt đầu cuộc gọi ngay lập tức</string>
+    <string name="btn_schedule_format">Lên lịch gọi sau %1$s</string>
+    <string name="btn_counting_down_format">Đang đếm ngược: còn %1$ds (Bấm để hủy)</string>
+    <string name="schedule_success_toast">Đã bắt đầu đếm ngược %1$s! Hãy tắt màn hình ngay.</string>
+    <string name="schedule_cancelled_toast">Đã hủy hẹn giờ cuộc gọi</string>
+    <string name="permission_notification_toast">Cần cấp quyền thông báo để hiển thị cuộc gọi!</string>
+    <string name="permission_exact_alarm_toast">Vui lòng cấp quyền \'Báo thức &amp; lời nhắc\' để hẹn giờ chính xác!</string>
+    <string name="permission_overlay_toast">Vui lòng cấp quyền \'Xuất hiện trên cùng\' để cuộc gọi hiển thị đè lên màn hình khóa!</string>
+    <string name="lockscreen_permission_title">Quyền đánh thức màn hình khóa</string>
+    <string name="lockscreen_permission_desc">Cấp quyền thông báo toàn màn hình để cuộc gọi tự bật sáng màn hình khi đang khóa máy.</string>
+    <string name="btn_grant_fullscreen">Bật Toàn Màn Hình</string>
+    <string name="btn_grant_overlay">Bật Hiển Thị Đè</string>
+    <string name="error_scheduling">Lỗi khi lên lịch: %1$s</string>
+    
+    <!-- Time units -->
+    <string name="time_10s">10 giây</string>
+    <string name="time_30s">30 giây</string>
+    <string name="time_60s">1 phút</string>
+    <string name="time_2m">2 phút</string>
+    <string name="time_5m">5 phút</string>
+</resources>

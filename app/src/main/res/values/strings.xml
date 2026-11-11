@@ -1,0 +1,48 @@
+<resources>
+    <string name="app_name">KPhone</string>
+    <string name="incoming_call">Incoming call</string>
+    <string name="mobile_label">Mobile</string>
+    <string name="call_ended">Call ended</string>
+    
+    <!-- In-Call Actions (used for contentDescription) -->
+    <string name="action_mute">Mute</string>
+    <string name="action_keypad">Keypad</string>
+    <string name="action_speaker">Speaker</string>
+    <string name="action_add_call">Add call</string>
+    <string name="action_hold">Hold</string>
+    <string name="action_video">Video</string>
+    <string name="action_end_call">End call</string>
+    <string name="action_answer">Answer</string>
+    <string name="action_decline">Decline</string>
+    <string name="action_quick_reply">Quick reply</string>
+
+    <!-- Main Screen -->
+    <string name="caller_info_section">Caller Details</string>
+    <string name="caller_name_label">Caller Name</string>
+    <string name="caller_number_label">Phone Number</string>
+    <string name="timer_section">Schedule Call</string>
+    <string name="ringtone_section">Ringtone</string>
+    <string name="default_ringtone">Default device ringtone</string>
+    <string name="btn_use_default_ringtone">Device Ringtone</string>
+    <string name="btn_pick_file">Choose File</string>
+    <string name="btn_start_now">Start Call Immediately</string>
+    <string name="btn_schedule_format">Schedule in %1$s</string>
+    <string name="btn_counting_down_format">Counting down: %1$ds left (Tap to cancel)</string>
+    <string name="schedule_success_toast">Call scheduled in %1$s. Lock your screen now!</string>
+    <string name="schedule_cancelled_toast">Scheduled call cancelled</string>
+    <string name="permission_notification_toast">Notification permission is required to show incoming calls!</string>
+    <string name="permission_exact_alarm_toast">Please allow \'Alarms &amp; reminders\' to schedule exact calls!</string>
+    <string name="permission_overlay_toast">Please allow \'Display over other apps\' for incoming calls to show over lock screen!</string>
+    <string name="lockscreen_permission_title">Lock Screen Call Permission</string>
+    <string name="lockscreen_permission_desc">Allow full-screen notifications or overlay so the call wakes up your screen when locked.</string>
+    <string name="btn_grant_fullscreen">Allow Full-Screen Call</string>
+    <string name="btn_grant_overlay">Allow Overlay</string>
+    <string name="error_scheduling">Error scheduling: %1$s</string>
+    
+    <!-- Time units -->
+    <string name="time_10s">10 sec</string>
+    <string name="time_30s">30 sec</string>
+    <string name="time_60s">1 min</string>
+    <string name="time_2m">2 mins</string>
+    <string name="time_5m">5 mins</string>
+</resources>
