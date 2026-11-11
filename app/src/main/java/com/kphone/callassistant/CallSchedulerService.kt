@@ -63,17 +63,18 @@ class CallSchedulerService : Service() {
 
     private fun startForegroundNotification(secondsLeft: Int) {
         try {
-            val channelId = "kphone_scheduler_channel"
+            val channelId = "kphone_scheduler_silent_channel"
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
                     channelId,
                     "KPhone Timer",
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_MIN
                 ).apply {
                     description = "Đếm ngược cuộc gọi hẹn giờ"
                     setShowBadge(false)
+                    lockscreenVisibility = NotificationCompat.VISIBILITY_SECRET
                 }
                 notificationManager.createNotificationChannel(channel)
             }
@@ -84,7 +85,9 @@ class CallSchedulerService : Service() {
                 .setContentText("Cuộc gọi sẽ đến sau ${secondsLeft}s...")
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setSilent(true)
+                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+                .setPriority(NotificationCompat.PRIORITY_MIN)
                 .build()
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -98,17 +101,6 @@ class CallSchedulerService : Service() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            try {
-                val channelId = "kphone_scheduler_channel"
-                val notification = NotificationCompat.Builder(this, channelId)
-                    .setSmallIcon(R.drawable.ic_launcher_foreground)
-                    .setContentTitle("KPhone")
-                    .setContentText("Đang hẹn giờ cuộc gọi...")
-                    .build()
-                startForeground(SERVICE_NOTIFICATION_ID, notification)
-            } catch (ex: Exception) {
-                ex.printStackTrace()
-            }
         }
     }
 
@@ -131,16 +123,39 @@ class CallSchedulerService : Service() {
 
             override fun onFinish() {
                 _remainingSeconds.value = 0
+
+                // Promote foreground service notification to the high-priority Incoming Call FullScreenIntent notification!
+                try {
+                    val callNotif = CallAlarmReceiver.buildIncomingCallNotification(
+                        this@CallSchedulerService,
+                        callerName,
+                        callerNumber,
+                        ringtoneUri
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        startForeground(
+                            CallAlarmReceiver.NOTIFICATION_ID,
+                            callNotif,
+                            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                        )
+                    } else {
+                        startForeground(CallAlarmReceiver.NOTIFICATION_ID, callNotif)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                // Wake screen, start ringing, and launch IncomingCallActivity
                 CallAlarmReceiver.triggerIncomingCallNow(
                     this@CallSchedulerService,
                     callerName,
                     callerNumber,
                     ringtoneUri
                 )
-                // Keep foreground service & CPU wakelock alive for 4 seconds while IncomingCallActivity wakes the screen
+
                 mainHandler.postDelayed({
                     stopCountdownAndService()
-                }, 4000L)
+                }, 5000L)
             }
         }.start()
     }
@@ -150,7 +165,7 @@ class CallSchedulerService : Service() {
         countDownTimer = null
         _remainingSeconds.value = 0
         try {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopForeground(STOP_FOREGROUND_DETACH)
         } catch (e: Exception) {
             e.printStackTrace()
         }

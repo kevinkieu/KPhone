@@ -189,6 +189,19 @@ fun MainSettingsScreen() {
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(stringResource(R.string.app_name), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = Color(0xFF282D37),
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = "v2.1",
+                                color = Color(0xFF8AB4F8),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

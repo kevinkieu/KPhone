@@ -95,6 +95,13 @@ class IncomingCallActivity : ComponentActivity() {
         )
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        turnScreenOnAndKeyguard()
+        SoundVibrationManager.acquireScreenWakeLock(this)
+    }
+
     private fun acceptCall() {
         SoundVibrationManager.stopRinging()
         dismissNotification()

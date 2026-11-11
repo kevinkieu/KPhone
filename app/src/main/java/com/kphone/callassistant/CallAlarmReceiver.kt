@@ -11,7 +11,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import androidx.core.app.Person
 
 class CallAlarmReceiver : BroadcastReceiver() {
 
@@ -39,30 +38,13 @@ class CallAlarmReceiver : BroadcastReceiver() {
         const val ACTION_TRIGGER_CALL = "com.kphone.callassistant.ACTION_TRIGGER_CALL"
         const val ACTION_DECLINE_CALL = "com.kphone.callassistant.ACTION_DECLINE_CALL"
 
-        @Volatile
-        private var lastTriggerTimeMillis: Long = 0L
-
-        @Synchronized
-        fun triggerIncomingCallNow(
+        fun createIncomingCallIntent(
             context: Context,
             callerName: String,
             callerNumber: String,
             ringtoneUriStr: String?
-        ) {
-            val now = System.currentTimeMillis()
-            if (now - lastTriggerTimeMillis < 3500L) {
-                return
-            }
-            lastTriggerTimeMillis = now
-
-            val appContext = context.applicationContext
-
-            // 1. Physically wake up screen & start ringing + vibrating immediately
-            SoundVibrationManager.acquireScreenWakeLock(appContext)
-            SoundVibrationManager.startRinging(appContext, ringtoneUriStr)
-
-            // 2. Build the IncomingCallActivity Intent
-            val fullScreenIntent = Intent(appContext, IncomingCallActivity::class.java).apply {
+        ): Intent {
+            return Intent(context.applicationContext, IncomingCallActivity::class.java).apply {
                 putExtra(EXTRA_CALLER_NAME, callerName)
                 putExtra(EXTRA_CALLER_NUMBER, callerNumber)
                 putExtra(EXTRA_RINGTONE_URI, ringtoneUriStr)
@@ -70,13 +52,51 @@ class CallAlarmReceiver : BroadcastReceiver() {
                     Intent.FLAG_ACTIVITY_NEW_TASK or
                             Intent.FLAG_ACTIVITY_CLEAR_TOP or
                             Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
                             Intent.FLAG_ACTIVITY_NO_USER_ACTION
                 )
             }
+        }
 
-            // 3. Create NotificationChannel with max priority and lockscreen visibility
+        fun createCreatorActivityOptions(): android.os.Bundle? {
+            if (Build.VERSION.SDK_INT >= 34) {
+                try {
+                    return ActivityOptions.makeBasic()
+                        .setPendingIntentCreatorBackgroundActivityStartMode(
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                        )
+                        .toBundle()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            return null
+        }
+
+        fun createSenderActivityOptions(): android.os.Bundle? {
+            if (Build.VERSION.SDK_INT >= 34) {
+                try {
+                    return ActivityOptions.makeBasic()
+                        .setPendingIntentBackgroundActivityStartMode(
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
+                        )
+                        .toBundle()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            return null
+        }
+
+        fun buildIncomingCallNotification(
+            context: Context,
+            callerName: String,
+            callerNumber: String,
+            ringtoneUriStr: String?
+        ): Notification {
+            val appContext = context.applicationContext
             val notificationManager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channelId = "kphone_incoming_call_channel_v5"
+            val channelId = "kphone_incoming_call_channel_v6"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val channel = NotificationChannel(
@@ -84,7 +104,7 @@ class CallAlarmReceiver : BroadcastReceiver() {
                     appContext.getString(R.string.incoming_call),
                     NotificationManager.IMPORTANCE_HIGH
                 ).apply {
-                    description = "Incoming Call Alert"
+                    description = "Incoming Call FullScreen Alert"
                     lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                     setBypassDnd(true)
                     setSound(null, null)
@@ -93,87 +113,54 @@ class CallAlarmReceiver : BroadcastReceiver() {
                 notificationManager.createNotificationChannel(channel)
             }
 
-            val activityOptionsBundle = if (Build.VERSION.SDK_INT >= 34) {
-                try {
-                    ActivityOptions.makeBasic()
-                        .setPendingIntentCreatorBackgroundActivityStartMode(
-                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED
-                        )
-                        .toBundle()
-                } catch (e: Exception) {
-                    null
-                }
-            } else {
-                null
-            }
+            val fullScreenIntent = createIncomingCallIntent(appContext, callerName, callerNumber, ringtoneUriStr)
+            val creatorOptions = createCreatorActivityOptions()
 
             val fullScreenPendingIntent = PendingIntent.getActivity(
                 appContext,
                 1001,
                 fullScreenIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                activityOptionsBundle
+                creatorOptions
             )
 
-            // Answer Intent (opens InCallActivity)
-            val answerIntent = Intent(appContext, InCallActivity::class.java).apply {
-                putExtra(EXTRA_CALLER_NAME, callerName)
-                putExtra(EXTRA_CALLER_NUMBER, callerNumber)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
-            val answerPendingIntent = PendingIntent.getActivity(
-                appContext,
-                1003,
-                answerIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                activityOptionsBundle
-            )
-
-            // Decline Intent
-            val declineIntent = Intent(appContext, CallAlarmReceiver::class.java).apply {
-                action = ACTION_DECLINE_CALL
-            }
-            val declinePendingIntent = PendingIntent.getBroadcast(
-                appContext,
-                1004,
-                declineIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val builder = NotificationCompat.Builder(appContext, channelId)
+            return NotificationCompat.Builder(appContext, channelId)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
                 .setContentTitle(callerName)
-                .setContentText(callerNumber)
+                .setContentText("$callerNumber • ${appContext.getString(R.string.incoming_call)}")
                 .setPriority(NotificationCompat.PRIORITY_MAX)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 .setFullScreenIntent(fullScreenPendingIntent, true)
                 .setContentIntent(fullScreenPendingIntent)
                 .setOngoing(true)
-                .setAutoCancel(false)
+                .setAutoCancel(true)
+                .build()
+        }
 
+        fun triggerIncomingCallNow(
+            context: Context,
+            callerName: String,
+            callerNumber: String,
+            ringtoneUriStr: String?
+        ) {
+            val appContext = context.applicationContext
+
+            // 1. Physically wake up screen out of AOD & start ringing + vibrating immediately
+            SoundVibrationManager.acquireScreenWakeLock(appContext)
+            SoundVibrationManager.startRinging(appContext, ringtoneUriStr)
+
+            // 2. Post standard high-priority CATEGORY_CALL notification with fullScreenIntent
+            val notificationManager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notification = buildIncomingCallNotification(appContext, callerName, callerNumber, ringtoneUriStr)
+            notificationManager.notify(NOTIFICATION_ID, notification)
+
+            // 3. Launch IncomingCallActivity directly
+            val fullScreenIntent = createIncomingCallIntent(appContext, callerName, callerNumber, ringtoneUriStr)
+            val senderOptions = createSenderActivityOptions()
             try {
-                val callerPerson = Person.Builder()
-                    .setName(callerName.ifBlank { "Unknown" })
-                    .setImportant(true)
-                    .build()
-                builder.setStyle(
-                    NotificationCompat.CallStyle.forIncomingCall(
-                        callerPerson,
-                        declinePendingIntent,
-                        answerPendingIntent
-                    )
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
-            notificationManager.notify(NOTIFICATION_ID, builder.build())
-
-            // 4. Direct launch of IncomingCallActivity (works via setAlarmClock BAL exemption or Overlay)
-            try {
-                if (activityOptionsBundle != null) {
-                    appContext.startActivity(fullScreenIntent, activityOptionsBundle)
+                if (senderOptions != null) {
+                    appContext.startActivity(fullScreenIntent, senderOptions)
                 } else {
                     appContext.startActivity(fullScreenIntent)
                 }
@@ -191,18 +178,18 @@ class CallAlarmReceiver : BroadcastReceiver() {
         ) {
             val appContext = context.applicationContext
             val alarmManager = appContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val intent = Intent(appContext, CallAlarmReceiver::class.java).apply {
-                action = ACTION_TRIGGER_CALL
-                putExtra(EXTRA_CALLER_NAME, callerName)
-                putExtra(EXTRA_CALLER_NUMBER, callerNumber)
-                putExtra(EXTRA_RINGTONE_URI, ringtoneUri)
-            }
 
-            val pendingIntent = PendingIntent.getBroadcast(
+            val fullScreenIntent = createIncomingCallIntent(appContext, callerName, callerNumber, ringtoneUri)
+            val creatorOptions = createCreatorActivityOptions()
+
+            // Direct Activity PendingIntent for setAlarmClock:
+            // Android System Server (AlarmManagerService) launches IncomingCallActivity directly with BAL_ALLOW_ALARM_CLOCK privilege!
+            val directActivityPendingIntent = PendingIntent.getActivity(
                 appContext,
                 1002,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                fullScreenIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                creatorOptions
             )
 
             val showIntent = Intent(appContext, MainActivity::class.java)
@@ -216,15 +203,8 @@ class CallAlarmReceiver : BroadcastReceiver() {
             val triggerTime = System.currentTimeMillis() + (secondsInFuture * 1000L)
 
             try {
-                // setAlarmClock is NEVER deferred by Doze mode when screen is off AND grants BAL exemption on Android 14-16!
                 val alarmClockInfo = AlarmManager.AlarmClockInfo(triggerTime, showPendingIntent)
-                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
-            } catch (e: SecurityException) {
-                try {
-                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                } catch (ex: Exception) {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
-                }
+                alarmManager.setAlarmClock(alarmClockInfo, directActivityPendingIntent)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -234,16 +214,14 @@ class CallAlarmReceiver : BroadcastReceiver() {
             try {
                 val appContext = context.applicationContext
                 val alarmManager = appContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                val intent = Intent(appContext, CallAlarmReceiver::class.java).apply {
-                    action = ACTION_TRIGGER_CALL
-                }
-                val pendingIntent = PendingIntent.getBroadcast(
+                val fullScreenIntent = Intent(appContext, IncomingCallActivity::class.java)
+                val directActivityPendingIntent = PendingIntent.getActivity(
                     appContext,
                     1002,
-                    intent,
+                    fullScreenIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                alarmManager.cancel(pendingIntent)
+                alarmManager.cancel(directActivityPendingIntent)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
